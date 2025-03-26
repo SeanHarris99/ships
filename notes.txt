@@ -1,0 +1,31 @@
+instead of getting a SAT image for an AIS ping, i need to do the reverse. the SAT image is rare, AIS is numerous. for a given SAT, find the nearest AIS ping
+
+can calculate acceleration from AIS pings over time (change in velocity)
+
+pointer resolution: pointer is actual novel/hard because you need to 
+    1. solve resolution:
+        A. make it so small u can run it infinitely (on full res) OR
+        B. make it so smart it can point out ships when theyre 1 pixel big (on zoomed out reduced res)
+    2. tell you where in the image the ship is (def for B, less for A) either through segmentation or naively outputting image coordinates, so your classifier can zoom in
+
+how is data structured?
+    build a big lookup table of
+        SAT image path : AIS metadata
+    
+    prior to training, need to build up directory of all SAT images, along with that lookup with AIS metadata
+
+data augmentation opportunities
+    can flip image left/right, and do identical flip on heading (speed/length/type are invariant)
+    but no rotations! ships look different at 90 degrees vs 180 degrees. SATs take photos at angle, cant reproduce angular effects 
+        (ship has smaller silhoutte facing u than from the side)
+    some random pertubation of centering is probably a good idea (even on non-augmented normal data)
+        since we're doing some deterministic centering based off predicted location, could introduce some systematic positional effects
+        random pertubation of center could help with this, and has zero effect on model as long as we dont clip the ship
+    color changes are probably good idea  
+        Sentinel-1 data is radar with just one grey channel, but I'm guessing the intensity is kinda arbitrary and depends on specifics of radar
+        varying greyscale intensity on image probably makes sense. dont want to overfit on whatever min/max intensity happen to be
+
+
+
+call api, basically ask "what tiles did you scan this day?"
+    get all tiles. save geometry and datetime
