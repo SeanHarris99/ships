@@ -92,7 +92,7 @@ def download_and_crop_image(item, ais_row, crop_buffer=0.03):
     item = sign(item)
     arr = load(
         [item],
-        bands=["vv"],
+        bands=["vv", "vh"],
         crs="EPSG:4326",
         resolution=0.0001,
         bbox=(
@@ -104,7 +104,7 @@ def download_and_crop_image(item, ais_row, crop_buffer=0.03):
         groupby="solar_day",
     )
 
-    if arr.vv.size == 0:
+    if arr.vv.size == 0 or arr.vh.size == 0:
         return None
 
     sar_time = pd.to_datetime(arr.vv.time.values[0]).tz_localize("UTC")
@@ -115,12 +115,22 @@ def download_and_crop_image(item, ais_row, crop_buffer=0.03):
     lat_slice = slice(adj_lat + crop_buffer, adj_lat - crop_buffer)
     lon_slice = slice(adj_lon - crop_buffer, adj_lon + crop_buffer)
 
-    crop = arr.vv.sel(latitude=lat_slice, longitude=lon_slice).isel(time=0)
-    return crop
+    crop_vv = arr.vv.sel(latitude=lat_slice, longitude=lon_slice).isel(time=0)
+    crop_vh = arr.vh.sel(latitude=lat_slice, longitude=lon_slice).isel(time=0)
+
+    if crop_vv.shape != crop_vh.shape:
+        return None
+
+    stacked = np.stack([crop_vv.values, crop_vh.values])  # shape (2, H, W)
+    if np.all(np.isnan(stacked)):
+        return None
+
+    return stacked
 
 
-def save_crop(crop, ais_row, out_dir):
-    if crop is None:
+
+def save_crop(crop_array, ais_row, out_dir):
+    if crop_array is None:
         return None
 
     mmsi = ais_row["MMSI"]
@@ -133,12 +143,12 @@ def save_crop(crop, ais_row, out_dir):
     if os.path.exists(fpath):
         return fpath
 
-    img = crop.values
-    if img.size == 0 or np.all(np.isnan(img)):
+    if crop_array.size == 0 or np.all(np.isnan(crop_array)):
         return None
 
-    np.save(fpath, img)
-    return fpath  
+    np.save(fpath, crop_array)
+    return fpath
+
 
 
 

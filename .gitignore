@@ -1,1 +1,2 @@
-v1/data/*
+testing/data/*
+__pycache__/*
