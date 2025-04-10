@@ -29,3 +29,36 @@ data augmentation opportunities
 
 call api, basically ask "what tiles did you scan this day?"
     get all tiles. save geometry and datetime
+
+
+i feel like this is really close to being pretty impressive, but a bit more than "predicting heading" would get it there 
+for instace: if we could truly ID ships exactly, that lets us pull up multiple images of ships, to characterize them 
+    but this is a question of can u predict true ship ID based off 50-100 pixels. should test with one-hot prediction on MMSI 
+can also do this with planes but they are smaller
+
+
+oops, paper already does this to a TEE 
+what i can do that they didnt:
+    ship classification (ship type or ship ID) with contrastive learning
+    trans-sat-scan ship tracking, world state updated with ship scans, zone of likely travel
+    more feature engineering (different vv / vh combos)
+
+    the big thing is using SLC full radar data    
+        instead of blending it all up into a real valued image, SLC is 2D image where pixels are complex numbers, the actual radar return
+        with I + jQ signal return values (the sin component and cos component of the return)
+        this carries:
+            higher resolution information
+            amplitude and phase shift information which could indicate doppler-style velocity markers
+        naively can break into 2 channel, one for real I value, other for complex jQ value, drop the j, treat it like 2-channel image, stack vv and vh into 4 channel 
+        OR use complex-number neural nets which apparently exist
+        the hope being you get enough data to do contrastive learning and learn ship IDs (can prototype with supervised one-hot ID regression)
+
+novel aspects
+    using raw radar return SLC data 
+    data augmentation possibilities
+    centering SAT images with heading+velocity extrapolation (completed)
+    vh / vv engineered features
+    entire tracking system 
+        ultra-lightweight "pointer", handcraft an extremely small model to detect presense of ships
+        the heavy weight classifier, with novel contrastive raw SLC classification 
+        projecting circle of likelihood for future detection 
